@@ -39,8 +39,9 @@ class HomeController
         if ($this->auth->isLoggedIn() & $this->auth->hasRole(\Delight\Auth\Role::ADMIN)) {
             
             $username = $this->auth->getUsername();
+            $id = $this->auth->getUserId();
 
-            echo $this->templates->render('create_user', ['uname' => $username]);
+            echo $this->templates->render('create_user', ['uname' => $username, 'uid' => $id]);
         }
         else {
             flash()->message('Вы не вошли в систему или нет прав на добавление нового пользователя', 'error');
@@ -115,11 +116,13 @@ class HomeController
         if ($this->auth->isLoggedIn() && $this->auth->getUserId() == $_GET['id'] || $this->auth->hasRole(\Delight\Auth\Role::ADMIN)) {
             
             $username = $this->auth->getUsername();
+            $id = $this->auth->getUserId();
+
 
             $db = new QueryBuilder;
             $user = $db->getUser('users', $_GET['id']);
 
-            echo $this->templates->render('edit', ['uname' => $username, 'viewUser' => $user]);
+            echo $this->templates->render('edit', ['uname' => $username, 'uid' => $id, 'viewUser' => $user]);
         }
         else {
             flash()->message('Можно редактировать только свой профиль', 'error');
