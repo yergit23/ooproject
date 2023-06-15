@@ -11,17 +11,16 @@ class HomeController
 {
     private $templates;
     private $auth;
+    private $qb;
 
-    public function __construct()
+    public function __construct(QueryBuilder $qb, Engine $engine, Auth $auth)
     {
-        //$this->templates = new Engine('./');
-        $this->templates = new Engine('../app/views');
-
-        $db = new \PDO('mysql:dbname=ooproject;host=localhost;charset=utf8mb4', 'root', '');
-        $this->auth = new \Delight\Auth\Auth($db);
+        $this->qb = $qb;
+        $this->templates = $engine;
+        $this->auth = $auth;
     }
 
-    public function index($vars)
+    public function index()
     {
         // Login state
         if ($this->auth->isLoggedIn()) {
@@ -54,9 +53,7 @@ class HomeController
         try {
             $userId = $this->auth->admin()->createUser($_POST['email'], $_POST['password'], $_POST['username']);
 
-            $db = new QueryBuilder;
-
-            $db->update([
+            $this->qb->update([
                 'job' => $_POST['job'],
                 'phone' => $_POST['phone'],
                 'address' => $_POST['address'],
@@ -78,7 +75,7 @@ class HomeController
                 $uploadFile = $uploadDir .'/'. $newName;
                 move_uploaded_file($tmpName, $uploadFile);
 
-                $db->update([
+                $this->qb->update([
                     'img' => $uploadFile
                 ], $userId, 'users');
             }
@@ -118,9 +115,7 @@ class HomeController
             $username = $this->auth->getUsername();
             $id = $this->auth->getUserId();
 
-
-            $db = new QueryBuilder;
-            $user = $db->getUser('users', $_GET['id']);
+            $user = $this->qb->getUser('users', $_GET['id']);
 
             echo $this->templates->render('edit', ['uname' => $username, 'uid' => $id, 'viewUser' => $user]);
         }
@@ -132,8 +127,7 @@ class HomeController
 
     public function editForm()
     {
-        $db = new QueryBuilder;
-        $db->update([
+        $this->qb->update([
             'username' => $_POST['username'],
             'job' => $_POST['job'],
             'phone' => $_POST['phone'],
@@ -156,8 +150,7 @@ class HomeController
             $username = $this->auth->getUsername();
             $id = $this->auth->getUserId();
 
-            $db = new QueryBuilder;
-            $user = $db->getUser('users', $_GET['id']);
+            $user = $this->qb->getUser('users', $_GET['id']);
 
             echo $this->templates->render('media', ['uname' => $username, 'uid' => $id, 'viewUser' => $user]);
         }
@@ -184,8 +177,7 @@ class HomeController
             $uploadFile = $uploadDir .'/'. $newName;
             move_uploaded_file($tmpName, $uploadFile);
 
-            $db = new QueryBuilder;
-            $db->update([
+            $this->qb->update([
                 'img' => $uploadFile
             ], $_POST['id'], 'users');
 
@@ -210,8 +202,7 @@ class HomeController
             $username = $this->auth->getUsername();
             $id = $this->auth->getUserId();
 
-            $db = new QueryBuilder;
-            $user = $db->getUser('users', $_GET['id']);
+            $user = $this->qb->getUser('users', $_GET['id']);
 
             echo $this->templates->render('page_profile', ['uname' => $username, 'uid' => $id, 'viewUser' => $user]);
         }
@@ -222,7 +213,7 @@ class HomeController
     }
 
     // Registration (sign up)
-    public function register($vars)
+    public function register()
     {
         if ($this->auth->isLoggedIn()) {
             flash()->message('Для регистрации нужно выйти из системы', 'info');
@@ -349,8 +340,7 @@ class HomeController
             $username = $this->auth->getUsername();
             $id = $this->auth->getUserId();
 
-            $db = new QueryBuilder;
-            $user = $db->getUser('users', $_GET['id']);
+            $user = $this->qb->getUser('users', $_GET['id']);
 
             echo $this->templates->render('security', ['uname' => $username, 'uid' => $id, 'viewUser' => $user]);
         }
@@ -362,12 +352,11 @@ class HomeController
 
     public function secForm()
     {
-        $db = new QueryBuilder;
-        $user = $db->getUserEmail('users', $_POST['email']);
+        $user = $this->qb->getUserEmail('users', $_POST['email']);
 
         if (empty($user)) {
             // update email
-            $db->update(['email' => $_POST['email']], $_POST['id'], 'users');
+            $this->qb->update(['email' => $_POST['email']], $_POST['id'], 'users');
             flash()->message('Email успешно обновлен', 'success');
 
             if (!empty($_POST['newPassword']) && $_POST['newPassword'] == $_POST['newPasswordConfirm']) {
@@ -399,10 +388,9 @@ class HomeController
             $username = $this->auth->getUsername();
             $id = $this->auth->getUserId();
 
-            $db = new QueryBuilder;
-            $user = $db->getUser('users', $_GET['id']);
+            $user = $this->qb->getUser('users', $_GET['id']);
 
-            $status = $db->getAll('users_status');
+            $status = $this->qb->getAll('users_status');
 
             echo $this->templates->render('status', ['uname' => $username, 'uid' => $id, 'viewUser' => $user, 'viewStatus' => $status]);
         }
@@ -414,8 +402,7 @@ class HomeController
 
     public function statusForm()
     {
-        $db = new QueryBuilder;
-        $db->update(['user_status' => $_POST['status']], $_POST['id'], 'users');
+        $this->qb->update(['user_status' => $_POST['status']], $_POST['id'], 'users');
 
         flash()->message('Статус успешно обновлен', 'success');
         header("location: /profile?id=". $_POST['id'] ."");
@@ -432,8 +419,7 @@ class HomeController
             $roles = $this->auth->getRoles();
             $role = current($roles);
 
-            $db = new QueryBuilder;
-            $users = $db->getAll('users');
+            $users = $this->qb->getAll('users');
 
             echo $this->templates->render('users', ['uname' => $username, 'uid' => $id, 'urole' => $role, 'users' => $users]);
         }
@@ -454,8 +440,7 @@ class HomeController
         // Deleting users
         if ($this->auth->isLoggedIn() && $this->auth->getUserId() == $_GET['id'] || $this->auth->hasRole(\Delight\Auth\Role::ADMIN)) {
             try {
-                $db = new QueryBuilder;
-                $user = $db->getUser('users', $_GET['id']);
+                $user = $this->qb->getUser('users', $_GET['id']);
                 $itemUser = current($user);
 
                 if(!empty($itemUser['img'])) {
@@ -486,7 +471,7 @@ class HomeController
 
     public function test()
     {
-        flash()->message('We have signed up a new user with the ID', 'info');
+
     }
 
 }

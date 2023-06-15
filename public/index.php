@@ -1,14 +1,32 @@
 <?php
 // Start a Session
-if( !session_id() ) {
-    session_start();
-}
+if( !session_id() ) {session_start();}
 
 require_once "../vendor/autoload.php";
 //require_once "vendor/autoload.php";
-
+use DI\ContainerBuilder;
 use League\Plates\Engine;
-use \Tamtamchik\SimpleFlash\Flash;
+use Delight\Auth\Auth;
+
+$containerBuilder = new ContainerBuilder;
+$containerBuilder->addDefinitions([
+    Engine::class =>function() {
+        return new Engine('../app/views');
+    },
+    PDO::class => function() {
+        $driver = "mysql";
+        $host = "localhost";
+        $database_name = "ooproject";
+        $username = "root";
+        $password = "";
+
+        return new PDO("$driver:host=$host;dbname=$database_name", $username, $password);
+    },
+    Auth::class => function($container) {
+        return new Auth($container->get('PDO'));
+    }
+]);
+$container = $containerBuilder->build();
 
 $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) {
     $r->addRoute('GET', '/', ['App\controllers\HomeController', 'index']);
@@ -63,18 +81,8 @@ switch ($routeInfo[0]) {
     case FastRoute\Dispatcher::FOUND:
         $handler = $routeInfo[1];
         $vars = $routeInfo[2];
-        // ... call $handler with $vars
-        $controller = new $handler[0];
-        call_user_func([$controller, $handler[1]], $vars);
+        $container->call($routeInfo[1], $routeInfo[2]);
         break;
 }
-
-/*
-function get_user_handler($vars)
-{
-    d($vars['id']);
-    //echo "123";
-}
-*/
 
 ?>
