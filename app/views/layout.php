@@ -87,8 +87,24 @@
                 });
 
                 //initialize filter
-                initApp.listFilter($('#js-contacts'), $('#js-filter-contacts'));
+                //initApp.listFilter($('#js-contacts'), $('#js-filter-contacts'));
+
         });
 
+        function search() {
+            let input = document.getElementById('js-filter-contacts').value;
+            input=input.toLowerCase();
+            let x = document.getElementsByClassName('card border shadow-0 mb-g shadow-sm-hover');
+            
+            for (i = 0; i < x.length; i++) { 
+                if (!x[i].innerText.toLowerCase().includes(input)) {
+                    x[i].style.display="none";
+                }
+                else {
+                    x[i].style.display="";                 
+                }
+            }
+        }
+        
     </script>
 </html>

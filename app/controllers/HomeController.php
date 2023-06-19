@@ -471,7 +471,7 @@ class HomeController
 
     public function test()
     {
-
+        echo $this->templates->render('test');
     }
 
 }
